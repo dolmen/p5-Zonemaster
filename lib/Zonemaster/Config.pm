@@ -4,11 +4,11 @@ use 5.14.2;
 use Moose;
 use JSON;
 use File::ShareDir qw[dist_dir dist_file];
-use File::Slurp;
+use File::Slurper qw[read_text];
 use Hash::Merge;
 use File::Spec;
 
-use Zonemaster;
+#use Zonemaster;
 
 has 'cfiles'    => ( is => 'ro', isa => 'ArrayRef', default => sub { [] } );
 has 'pfiles'    => ( is => 'ro', isa => 'ArrayRef', default => sub { [] } );
@@ -45,14 +45,14 @@ sub BUILD {
 
     foreach my $dir ( _config_directory_list() ) {
         my $cfile = File::Spec->catfile( $dir, 'config.json' );
-        my $new = eval { decode_json read_file $cfile };
+        my $new = eval { decode_json read_text($cfile) };
         if ( $new ) {
             $config = $merger->merge( $config, $new );
             push @{ $self->cfiles }, $cfile;
         }
 
         my $pfile = File::Spec->catfile( $dir, 'policy.json' );
-        $new = eval { decode_json read_file $pfile };
+        $new = eval { decode_json read_text($pfile) };
         if ( $new ) {
             my $tc = $new->{__testcases__};
             delete $new->{__testcases__};
@@ -100,7 +100,7 @@ sub _config_directory_list {
 sub _load_base_config {
     my $internal = decode_json( join( '', <DATA> ) );
     # my $filename = dist_file( 'Zonemaster', 'config.json' );
-    # my $default = eval { decode_json read_file $filename };
+    # my $default = eval { decode_json read_text($filename) };
     #
     # $internal = $merger->merge( $internal, $default ) if $default;
 
@@ -120,7 +120,7 @@ sub load_module_policy {
 
 sub load_config_file {
     my ( $class, $filename ) = @_;
-    my $new = decode_json read_file $filename;
+    my $new = decode_json read_text($filename);
     $config = $merger->merge( $config, $new ) if $new;
 
     return !!$new;
@@ -145,7 +145,7 @@ sub load_policy_file {
         }
     }
 
-    my $new = decode_json read_file $filename;
+    my $new = decode_json read_text($filename);
     if ( $new ) {
         my $tc = $new->{__testcases__};
         delete $new->{__testcases__};
